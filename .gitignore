@@ -1,0 +1,7 @@
+/logs/
+.env
+docker.env
+.idea
+venv
+logs/*
+.pytest_cache
