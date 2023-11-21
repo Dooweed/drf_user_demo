@@ -6,7 +6,8 @@ from rest_framework.response import Response
 
 from users.filters import UserFilterSet, USER_SEARCH_FIELDS
 from users.models import User
-from users.serializers import UserSerializer, UpdateUserSerializer
+from users.permissions import UserPermission
+from users.serializers import UserSerializer, UpdateUserSerializer, CreateUserSerializer
 from utils.rest_framework.viewsets.async_mixins import AsyncGetObjectMixin
 from utils.rest_framework.viewsets.mixins import ActionBasedSerializerClassMixin
 
@@ -15,9 +16,10 @@ from utils.rest_framework.viewsets.mixins import ActionBasedSerializerClassMixin
 class UserViewSet(ActionBasedSerializerClassMixin, AsyncGetObjectMixin, AsyncViewSet):
     """ List (`GET`), create (`POST`), retrieve (`GET`), update (`PUT`, `PATCH`) and destroy (`DELETE`) actions. """
     queryset = User.objects.all()
-    permission_classes = [permissions.AllowAny]  # Allowing any access since nothing is said about access restriction
+    permission_classes = [UserPermission]  # Allowing any access since nothing is said about access restriction
 
     serializer_class = UserSerializer
+    create_serializer_class = CreateUserSerializer
     # We don't want users to be able to change some fields, so we use a different serializer for update
     update_serializer_class = UpdateUserSerializer
     partial_update_serializer_class = UpdateUserSerializer
