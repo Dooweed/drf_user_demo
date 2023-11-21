@@ -40,7 +40,7 @@ def test_list(client, test_data):
 
 
 @pytest.mark.django_db
-def test_create(client, serializer_context):
+def test_create(admin_client, serializer_context):
     """ Test ordinary creation and creation of existing object """
     url = reverse('user-list')
     data = {
@@ -50,19 +50,21 @@ def test_create(client, serializer_context):
         'email': 'johndoe@gmail.com',
         'is_staff': True,
         'is_active': True,
-        'is_superuser': False
+        'is_superuser': False,
+        'password': '123'
     }
 
     # Test ordinary create case
-    response: Response = client.post(url, data=data, format='json')
+    response: Response = admin_client.post(url, data=data, format='json')
     assert response.status_code == status.HTTP_201_CREATED, response.data
     response.data.pop('date_joined')
     response.data.pop('url')
+    data.pop('password')
     assert response.data == data
 
 
 @pytest.mark.django_db
-def test_update(client, serializer_context, test_data):
+def test_update(admin_client, serializer_context, test_data):
     """ Test ordinary update and update with short_name that exists in another object """
     instance = pick_random_obj(User)
     url = reverse('user-detail', [instance.id])
@@ -73,7 +75,7 @@ def test_update(client, serializer_context, test_data):
     new_user = UserFactory.build(date_joined=instance.date_joined, username=instance.username, id=instance.id)
     serializer = UpdateUserSerializer(instance=new_user, context=serializer_context)
     payload = get_payload(new_user, UpdateUserSerializer)
-    response: Response = client.put(url, data=payload, format='json')
+    response: Response = admin_client.put(url, data=payload, format='json')
     assert response.status_code == status.HTTP_200_OK, response.data
     assert response.data == serializer.data
 
@@ -91,7 +93,7 @@ def test_update(client, serializer_context, test_data):
         serializer = UpdateUserSerializer(instance=instance, context=serializer_context)
 
         payload = get_payload(instance, UpdateUserSerializer, fields=[field_name])
-        response: Response = client.patch(url, data=payload, format='json')
+        response: Response = admin_client.patch(url, data=payload, format='json')
         assert response.status_code == status.HTTP_200_OK, response.data
         assert response.data == serializer.data
 
@@ -110,25 +112,25 @@ def test_detail(client, serializer_context, test_data):
 
 
 @pytest.mark.django_db
-def test_delete(client, test_data):
+def test_delete(admin_client, test_data):
     obj = pick_random_obj(User)
 
     # Ordinary delete
     url = reverse('user-detail', [obj.id])
-    response: Response = client.delete(url)
+    response: Response = admin_client.delete(url)
     assert response.status_code == status.HTTP_204_NO_CONTENT, response.data
 
 
 @pytest.mark.django_db
 def test_detail_nonexistent(client, test_data):
-    url = reverse(f'user-detail', [0])
+    url = reverse(f'user-detail', [-1])
     response: Response = client.get(url)
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 @pytest.mark.django_db
 def test_update_nonexistent(client, test_data):
-    url = reverse('user-detail', [0])
+    url = reverse('user-detail', [-1])
 
     obj = pick_random_obj(User)
 
@@ -143,6 +145,6 @@ def test_update_nonexistent(client, test_data):
 
 @pytest.mark.django_db
 def test_delete_nonexistent(client, test_data):
-    url = reverse('user-detail', [0])
+    url = reverse('user-detail', [-1])
     response: Response = client.delete(url)
     assert response.status_code == status.HTTP_404_NOT_FOUND
